@@ -14,29 +14,24 @@ struct TimetableRowView: View {
     }()
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            // Left: period number + time
-            VStack(spacing: 2) {
-                Text("\(period)")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundColor(isCurrent ? .accentColor : .primary)
+        HStack(alignment: .center, spacing: 10) {
+            // Left: period number
+            Text("\(period)")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundColor(isCurrent ? .accentColor : .primary)
+                .frame(width: 44)
 
-                if let slot = timeSlot {
-                    Text("\(Self.timeFormatter.string(from: slot.startTime))")
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary)
-                    Text("~\(Self.timeFormatter.string(from: slot.endTime))")
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary)
-                }
-            }
-            .frame(width: 44)
-
-            // Center: subject + change info
+            // Center: subject + time + change info
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.subject.isEmpty ? "자습" : entry.subject)
                     .font(.system(size: 14, weight: .medium))
                     .lineLimit(1)
+
+                if let slot = timeSlot {
+                    Text("\(Self.timeFormatter.string(from: slot.startTime)) ~ \(Self.timeFormatter.string(from: slot.endTime))")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                }
 
                 if entry.changed,
                    let origSubject = entry.originalSubject {
@@ -73,11 +68,22 @@ struct TimetableRowView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(
-            isCurrent
-                ? Color.accentColor.opacity(0.1)
-                : Color.clear
-        )
+        .background(currentPeriodBackground)
         .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private var currentPeriodBackground: some View {
+        if isCurrent {
+            if #available(macOS 26, *) {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(.clear)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 10))
+            } else {
+                Color.primary.opacity(0.05)
+            }
+        } else {
+            Color.clear
+        }
     }
 }

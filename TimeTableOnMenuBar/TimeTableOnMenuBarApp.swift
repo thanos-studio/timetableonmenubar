@@ -22,6 +22,14 @@ struct TimeTableOnMenuBarApp: App {
         Window("설정", id: "onboarding") {
             OnboardingContainerView()
                 .environmentObject(settingsStore)
+                .environmentObject(timetableStore)
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+
+        Window("학교 검색", id: "school-search") {
+            SchoolSearchSheet()
+                .environmentObject(settingsStore)
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)

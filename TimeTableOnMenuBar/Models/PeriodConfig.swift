@@ -12,11 +12,11 @@ struct PeriodConfig: Codable {
     static var defaults: PeriodConfig {
         PeriodConfig(
             startHour: 8,
-            startMinute: 30,
-            classDuration: 45,
+            startMinute: 40,
+            classDuration: 50,
             breakDuration: 10,
             lunchAfterPeriod: 4,
-            lunchDuration: 50,
+            lunchDuration: 60,
             totalPeriods: 7
         )
     }

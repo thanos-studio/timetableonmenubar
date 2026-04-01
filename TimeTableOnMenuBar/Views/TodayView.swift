@@ -18,12 +18,14 @@ struct TodayView: View {
         VStack(spacing: 8) {
             Image(systemName: "wifi.slash")
                 .font(.system(size: 32))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Text(message)
                 .font(.system(size: 14))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
+        .padding()
+        .modifier(GlassCardModifier())
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -33,8 +35,10 @@ struct TodayView: View {
                 .font(.system(size: 48))
             Text("오늘은 수업이 없어요")
                 .font(.system(size: 14))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
+        .padding()
+        .modifier(GlassCardModifier())
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 

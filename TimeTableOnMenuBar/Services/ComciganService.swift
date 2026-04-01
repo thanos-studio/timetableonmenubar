@@ -19,7 +19,7 @@ nonisolated final class ComciganService: Sendable {
         static let originalCode = try! NSRegularExpression(pattern: #"(?<=원자료=Q자료\(자료\.자료)\d+"#)
         static let dayCode      = try! NSRegularExpression(pattern: #"(?<=일일자료=Q자료\(자료\.자료)\d+"#)
         static let subjectCode  = try! NSRegularExpression(pattern: #"(?<=자료\.자료)\d+(?=\[sb\])"#)
-        static let whiteSpace   = try! NSRegularExpression(pattern: #"\0+$"#)
+        static let whiteSpace   = try! NSRegularExpression(pattern: #"\x{0}+$"#)
     }
 
     // MARK: - Cache (actor-isolated for thread safety)
@@ -164,11 +164,46 @@ nonisolated final class ComciganService: Sendable {
         }
         let data = try parseResponse(text)
 
-        let teachers = data["자료\(routes.teacherCode)"] as? [String] ?? []
-        let subjects = data["자료\(routes.subjectCode)"] as? [String] ?? []
-        let classCount = data["학급수"] as? [Int] ?? []
-        let now = data["자료\(routes.dayCode)"] as? [[[[Int]]]] ?? []
-        let original = data["자료\(routes.originalCode)"] as? [[[[Int]]]] ?? []
+        let teachers = (data["자료\(routes.teacherCode)"] as? [Any] ?? []).map { "\($0)" }
+        let subjects = (data["자료\(routes.subjectCode)"] as? [Any] ?? []).map { "\($0)" }
+        let classCount = (data["학급수"] as? [Any] ?? []).compactMap { $0 as? Int }
+        let nowRaw = data["자료\(routes.dayCode)"] as? [Any] ?? []
+        let origRaw = data["자료\(routes.originalCode)"] as? [Any] ?? []
+
+        // Comcigan nests metadata ints at index 0 of each level,
+        // so a direct [[[[Int]]]] cast fails. Parse manually.
+        func parseGrid(_ raw: [Any]) -> [[[[Int]]]] {
+            var result: [[[[Int]]]] = []
+            for gradeVal in raw {
+                guard let classes = gradeVal as? [Any] else {
+                    result.append([])
+                    continue
+                }
+                var gradeArr: [[[Int]]] = []
+                for classVal in classes {
+                    guard let days = classVal as? [Any] else {
+                        gradeArr.append([])
+                        continue
+                    }
+                    var classArr: [[Int]] = []
+                    for dayVal in days {
+                        if let periods = dayVal as? [Int] {
+                            classArr.append(periods)
+                        } else if let single = dayVal as? Int {
+                            classArr.append([single])
+                        } else {
+                            classArr.append([])
+                        }
+                    }
+                    gradeArr.append(classArr)
+                }
+                result.append(gradeArr)
+            }
+            return result
+        }
+
+        let now = parseGrid(nowRaw)
+        let original = parseGrid(origRaw)
 
         let teachersLen = teachers.count > 1
             ? Int(floor(log10(Double(teachers.count - 1)))) + 1

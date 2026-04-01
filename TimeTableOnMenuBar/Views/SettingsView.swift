@@ -1,13 +1,14 @@
 import SwiftUI
 import Foundation
+import ServiceManagement
 
 struct SettingsView: View {
     @EnvironmentObject var settingsStore: SettingsStore
     @EnvironmentObject var timetableStore: TimetableStore
+    @Environment(\.openWindow) private var openWindow
     @Binding var showSettings: Bool
 
-    // School
-    @State private var showSchoolSearch = false
+    @State private var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
 
     // Grade/Class
     @State private var grade: Int = 1
@@ -15,11 +16,11 @@ struct SettingsView: View {
 
     // Period config
     @State private var startHour: Int = 8
-    @State private var startMinute: Int = 30
-    @State private var classDuration: Int = 45
+    @State private var startMinute: Int = 40
+    @State private var classDuration: Int = 50
     @State private var breakDuration: Int = 10
     @State private var lunchAfterPeriod: Int = 4
-    @State private var lunchDuration: Int = 50
+    @State private var lunchDuration: Int = 60
     @State private var totalPeriods: Int = 7
 
     private var startTimeDate: Binding<Date> {
@@ -33,7 +34,7 @@ struct SettingsView: View {
             set: { newDate in
                 let components = Calendar.current.dateComponents([.hour, .minute], from: newDate)
                 startHour = components.hour ?? 8
-                startMinute = components.minute ?? 30
+                startMinute = components.minute ?? 40
             }
         )
     }
@@ -46,8 +47,10 @@ struct SettingsView: View {
                     showSettings = false
                 } label: {
                     Image(systemName: "chevron.left")
+                        .frame(width: 28, height: 28)
                 }
                 .buttonStyle(.plain)
+                .modifier(GlassCircleButtonModifier())
 
                 Text("설정")
                     .font(.title2)
@@ -72,7 +75,7 @@ struct SettingsView: View {
                             .foregroundColor(settingsStore.schoolName.isEmpty ? .secondary : .primary)
                         Spacer()
                         Button("학교 변경") {
-                            showSchoolSearch = true
+                            openWindow(id: "school-search")
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -172,6 +175,24 @@ struct SettingsView: View {
 
                     Divider()
 
+                    sectionHeader("일반")
+
+                    Toggle("로그인 시 자동 시작", isOn: $launchAtLogin)
+                        .padding(.horizontal, 12)
+                        .onChange(of: launchAtLogin) { newValue in
+                            do {
+                                if newValue {
+                                    try SMAppService.mainApp.register()
+                                } else {
+                                    try SMAppService.mainApp.unregister()
+                                }
+                            } catch {
+                                launchAtLogin = !newValue
+                            }
+                        }
+
+                    Divider()
+
                     // MARK: Actions
                     Button("저장") {
                         saveSettings()
@@ -183,7 +204,7 @@ struct SettingsView: View {
                     Button("종료") {
                         NSApp.terminate(nil)
                     }
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .buttonStyle(.bordered)
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 12)
@@ -204,10 +225,6 @@ struct SettingsView: View {
             lunchAfterPeriod = config.lunchAfterPeriod
             lunchDuration = config.lunchDuration
             totalPeriods = config.totalPeriods
-        }
-        .sheet(isPresented: $showSchoolSearch) {
-            SchoolSearchSheet()
-                .environmentObject(settingsStore)
         }
     }
 

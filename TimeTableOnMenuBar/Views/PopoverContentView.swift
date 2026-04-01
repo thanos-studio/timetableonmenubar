@@ -6,45 +6,111 @@ struct PopoverContentView: View {
     @EnvironmentObject var settingsStore: SettingsStore
     @Environment(\.openWindow) private var openWindow
 
-    enum Tab { case today, weekly }
-    @State private var selectedTab: Tab = .today
     @State private var showSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top bar: tabs + gear
             HStack {
-                Picker("", selection: $selectedTab) {
-                    Text("오늘").tag(Tab.today)
-                    Text("주간").tag(Tab.weekly)
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 160)
-
                 Spacer()
-
-                Button { showSettings.toggle() } label: {
-                    Image(systemName: "gearshape")
-                }
-                .buttonStyle(.plain)
+                settingsButton
             }
             .padding(.horizontal, 12)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
+            .padding(.top, 8)
+
+            tabContent
 
             Divider()
 
-            // Content
-            switch selectedTab {
-            case .today:
-                TodayView()
-            case .weekly:
-                WeeklyView()
+            bottomBar
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+        }
+        .frame(width: 320, height: 450)
+        .overlay {
+            if showSettings {
+                SettingsView(showSettings: $showSettings)
+                    .background(Color(nsColor: .windowBackgroundColor))
             }
+        }
+        .task {
+            if !settingsStore.hasCompletedOnboarding {
+                openWindow(id: "onboarding")
+            }
+        }
+    }
 
-            Divider()
+    @ViewBuilder
+    private var settingsButton: some View {
+        if #available(macOS 26, *) {
+            Button { showSettings.toggle() } label: {
+                Image(systemName: "gearshape")
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .glassEffect(.regular.interactive(), in: .circle)
+        } else {
+            Button { showSettings.toggle() } label: {
+                Image(systemName: "gearshape")
+            }
+            .buttonStyle(.plain)
+        }
+    }
 
-            // Bottom bar: last updated + refresh
+    @ViewBuilder
+    private var tabContent: some View {
+        if #available(macOS 15, *) {
+            TabView {
+                Tab("오늘", systemImage: "sun.max") {
+                    TodayView()
+                }
+                Tab("주간", systemImage: "calendar") {
+                    WeeklyView()
+                }
+            }
+        } else {
+            TabView {
+                TodayView()
+                    .tabItem { Label("오늘", systemImage: "sun.max") }
+                WeeklyView()
+                    .tabItem { Label("주간", systemImage: "calendar") }
+            }
+        }
+    }
+
+    // MARK: - Bottom Bar
+
+    @ViewBuilder
+    private var bottomBar: some View {
+        if #available(macOS 26, *) {
+            GlassEffectContainer(spacing: 8) {
+                HStack {
+                    if let date = timetableStore.lastRefreshDate {
+                        Text("마지막 업데이트: \(formatDate(date))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("업데이트 정보 없음")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button {
+                        Task { await timetableStore.refreshTimetable() }
+                    } label: {
+                        if timetableStore.isLoading {
+                            ProgressView().controlSize(.small)
+                                .frame(width: 28, height: 28)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                                .frame(width: 28, height: 28)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(timetableStore.isLoading)
+                    .glassEffect(.regular.interactive(), in: .circle)
+                }
+            }
+        } else {
             HStack {
                 if let date = timetableStore.lastRefreshDate {
                     Text("마지막 업데이트: \(formatDate(date))")
@@ -67,20 +133,6 @@ struct PopoverContentView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(timetableStore.isLoading)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-        }
-        .frame(width: 320, height: 450)
-        .overlay {
-            if showSettings {
-                SettingsView(showSettings: $showSettings)
-                    .background(Color(nsColor: .windowBackgroundColor))
-            }
-        }
-        .task {
-            if !settingsStore.hasCompletedOnboarding {
-                openWindow(id: "onboarding")
             }
         }
     }

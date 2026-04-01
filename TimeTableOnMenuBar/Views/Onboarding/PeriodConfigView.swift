@@ -3,14 +3,15 @@ import Foundation
 
 struct PeriodConfigView: View {
     @EnvironmentObject var settingsStore: SettingsStore
+    @EnvironmentObject var timetableStore: TimetableStore
     @Environment(\.dismiss) private var dismiss
 
     @State private var startHour: Int = 8
-    @State private var startMinute: Int = 30
-    @State private var classDuration: Int = 45
+    @State private var startMinute: Int = 40
+    @State private var classDuration: Int = 50
     @State private var breakDuration: Int = 10
     @State private var lunchAfterPeriod: Int = 4
-    @State private var lunchDuration: Int = 50
+    @State private var lunchDuration: Int = 60
     @State private var totalPeriods: Int = 7
 
     private var currentConfig: PeriodConfig {
@@ -36,7 +37,7 @@ struct PeriodConfigView: View {
             set: { newDate in
                 let components = Calendar.current.dateComponents([.hour, .minute], from: newDate)
                 startHour = components.hour ?? 8
-                startMinute = components.minute ?? 30
+                startMinute = components.minute ?? 40
             }
         )
     }
@@ -160,6 +161,8 @@ struct PeriodConfigView: View {
                     settingsStore.periodConfig = currentConfig
                     settingsStore.savePeriodConfig()
                     settingsStore.hasCompletedOnboarding = true
+                    timetableStore.regenerateSlots()
+                    Task { await timetableStore.refreshTimetable() }
                     NSApp.keyWindow?.close()
                 }
                 .buttonStyle(.borderedProminent)

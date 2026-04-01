@@ -68,7 +68,7 @@ struct WeeklyView: View {
                 Text(day)
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundColor(day == todayKey ? .accentColor : .secondary)
+                    .foregroundStyle(day == todayKey ? Color.accentColor : .secondary)
                     .frame(maxWidth: .infinity)
             }
         }
@@ -101,13 +101,11 @@ struct WeeklyView: View {
         let isToday = day == todayKey
 
         return ZStack {
-            // Today column highlight
             if isToday {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(Color.accentColor.opacity(0.05))
             }
 
-            // Changed entry background
             if let entry, entry.changed {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(Color.orange.opacity(0.12))
@@ -128,7 +126,7 @@ struct WeeklyView: View {
                     if !entry.teacher.isEmpty {
                         Text(entry.teacher)
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                 }
@@ -137,7 +135,7 @@ struct WeeklyView: View {
             } else {
                 Text("—")
                     .font(.caption2)
-                    .foregroundColor(.gray.opacity(0.3))
+                    .foregroundStyle(.gray.opacity(0.3))
             }
         }
     }
