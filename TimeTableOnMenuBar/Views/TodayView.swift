@@ -31,8 +31,9 @@ struct TodayView: View {
 
     private var emptyState: some View {
         VStack(spacing: 8) {
-            Text("🏖️")
+            Image(systemName: "beach.umbrella.fill")
                 .font(.system(size: 48))
+                .foregroundStyle(.secondary)
             Text("오늘은 수업이 없어요")
                 .font(.system(size: 14))
                 .foregroundStyle(.secondary)

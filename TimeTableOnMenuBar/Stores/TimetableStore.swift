@@ -5,7 +5,7 @@ import AppKit
 
 class TimetableStore: ObservableObject {
     // MARK: - Published properties
-    @Published var menuBarTitle: String = "🏖️"
+    @Published var menuBarTitle: String = ""
     @Published var todayTimetable: [TimetableEntry] = []
     @Published var weeklyTimetable: ClassTimetable? = nil
     @Published var currentSlot: PeriodTimeSlot? = nil
@@ -101,7 +101,7 @@ class TimetableStore: ObservableObject {
 
         // Weekend check
         if weekday == 1 || weekday == 7 {
-            menuBarTitle = "🏖️"
+            menuBarTitle = ""
             currentSlot = nil
             return
         }
@@ -110,8 +110,8 @@ class TimetableStore: ObservableObject {
         let today = calendar.component(.day, from: now)
         if today != lastKnownDay {
             lastKnownDay = today
-            periodSlots = PeriodCalculator.generateSlots(from: settingsStore.periodConfig, on: now)
             todayTimetable = extractTodayEntries(from: weeklyTimetable)
+            regenerateSlots()
             Task { await refreshTimetable() }
         }
 
@@ -119,14 +119,14 @@ class TimetableStore: ObservableObject {
         let todayStart = calendar.startOfDay(for: now)
         if let firstSlot = periodSlots.first,
            calendar.startOfDay(for: firstSlot.startTime) != todayStart {
-            periodSlots = PeriodCalculator.generateSlots(from: settingsStore.periodConfig, on: now)
+            regenerateSlots()
         }
 
         let slot = PeriodCalculator.currentPeriodSlot(at: now, slots: periodSlots)
         currentSlot = slot
 
         guard let slot else {
-            menuBarTitle = "🏖️"
+            menuBarTitle = ""
             return
         }
 
@@ -198,7 +198,8 @@ class TimetableStore: ObservableObject {
     // MARK: - Slot regeneration
 
     func regenerateSlots() {
-        periodSlots = PeriodCalculator.generateSlots(from: settingsStore.periodConfig, on: Date())
+        let count = todayTimetable.isEmpty ? nil : todayTimetable.count
+        periodSlots = PeriodCalculator.generateSlots(from: settingsStore.periodConfig, on: Date(), periodCount: count)
     }
 
     // MARK: - Helpers
@@ -206,6 +207,7 @@ class TimetableStore: ObservableObject {
     private func applyTimetableData(_ results: [ClassTimetable]) {
         weeklyTimetable = results.first
         todayTimetable = extractTodayEntries(from: weeklyTimetable)
+        regenerateSlots()
     }
 
     private func extractTodayEntries(from timetable: ClassTimetable?) -> [TimetableEntry] {

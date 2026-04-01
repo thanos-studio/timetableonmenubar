@@ -12,10 +12,16 @@ struct TimeTableOnMenuBarApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra(timetableStore.menuBarTitle) {
+        MenuBarExtra {
             PopoverContentView()
                 .environmentObject(settingsStore)
                 .environmentObject(timetableStore)
+        } label: {
+            if timetableStore.menuBarTitle.isEmpty {
+                Image(systemName: "beach.umbrella.fill")
+            } else {
+                Text(timetableStore.menuBarTitle)
+            }
         }
         .menuBarExtraStyle(.window)
 

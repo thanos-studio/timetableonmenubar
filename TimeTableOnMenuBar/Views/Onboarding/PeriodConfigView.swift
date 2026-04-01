@@ -90,24 +90,12 @@ struct PeriodConfigView: View {
                         }
                     }
 
-                    // Total periods
-                    configRow("총 교시 수") {
-                        HStack {
-                            Text("\(totalPeriods)교시")
-                                .monospacedDigit()
-                                .frame(minWidth: 50, alignment: .trailing)
-                            Stepper("", value: $totalPeriods, in: 4...10)
-                                .labelsHidden()
-                        }
-                    }
-
-                    // Lunch after period
                     configRow("점심시간 전 수업 수") {
                         HStack {
                             Text("\(lunchAfterPeriod)교시 후")
                                 .monospacedDigit()
                                 .frame(minWidth: 70, alignment: .trailing)
-                            Stepper("", value: $lunchAfterPeriod, in: 1...totalPeriods)
+                            Stepper("", value: $lunchAfterPeriod, in: 1...10)
                                 .labelsHidden()
                         }
                     }

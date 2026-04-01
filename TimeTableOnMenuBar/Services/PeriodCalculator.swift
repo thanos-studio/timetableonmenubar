@@ -1,7 +1,7 @@
 import Foundation
 
 enum PeriodCalculator {
-    static func generateSlots(from config: PeriodConfig, on date: Date) -> [PeriodTimeSlot] {
+    static func generateSlots(from config: PeriodConfig, on date: Date, periodCount: Int? = nil) -> [PeriodTimeSlot] {
         let calendar = Calendar.current
         var components = calendar.dateComponents([.year, .month, .day], from: date)
         components.hour = config.startHour
@@ -10,9 +10,10 @@ enum PeriodCalculator {
 
         guard var cursor = calendar.date(from: components) else { return [] }
 
+        let total = periodCount ?? config.totalPeriods
         var slots: [PeriodTimeSlot] = []
 
-        for period in 1...config.totalPeriods {
+        for period in 1...total {
             // Class slot
             let classEnd = cursor.addingTimeInterval(TimeInterval(config.classDuration * 60))
             slots.append(PeriodTimeSlot(period: period, startTime: cursor, endTime: classEnd, type: .class))
