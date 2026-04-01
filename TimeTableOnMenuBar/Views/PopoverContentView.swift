@@ -38,8 +38,7 @@ struct PopoverContentView: View {
             case .today:
                 TodayView()
             case .weekly:
-                Text("주간 시간표 (준비 중)")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                WeeklyView()
             }
 
             Divider()
@@ -72,6 +71,12 @@ struct PopoverContentView: View {
             .padding(.vertical, 8)
         }
         .frame(width: 320, height: 450)
+        .overlay {
+            if showSettings {
+                SettingsView(showSettings: $showSettings)
+                    .background(Color(nsColor: .windowBackgroundColor))
+            }
+        }
     }
 
     private func formatDate(_ date: Date) -> String {
