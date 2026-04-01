@@ -1,17 +1,22 @@
-//
-//  TimeTableOnMenuBarApp.swift
-//  TimeTableOnMenuBar
-//
-//  Created by Taeyeong Kim on 4/1/26.
-//
-
 import SwiftUI
 
 @main
 struct TimeTableOnMenuBarApp: App {
+    @StateObject private var settingsStore: SettingsStore
+    @StateObject private var timetableStore: TimetableStore
+
+    init() {
+        let settings = SettingsStore()
+        _settingsStore = StateObject(wrappedValue: settings)
+        _timetableStore = StateObject(wrappedValue: TimetableStore(settingsStore: settings))
+    }
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        MenuBarExtra(timetableStore.menuBarTitle) {
+            PopoverContentView()
+                .environmentObject(settingsStore)
+                .environmentObject(timetableStore)
         }
+        .menuBarExtraStyle(.window)
     }
 }
