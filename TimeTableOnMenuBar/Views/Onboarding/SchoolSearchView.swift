@@ -25,8 +25,7 @@ struct SchoolSearchView: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
-                TextField("학교 이름", text: $searchText)
-                    .textFieldStyle(.plain)
+                NativeTextField(text: $searchText, placeholder: "학교 이름")
                 if isSearching {
                     ProgressView()
                         .controlSize(.small)
