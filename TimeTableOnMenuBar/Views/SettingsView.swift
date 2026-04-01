@@ -48,6 +48,7 @@ struct SettingsView: View {
                 } label: {
                     Image(systemName: "chevron.left")
                         .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .modifier(GlassCircleButtonModifier())
