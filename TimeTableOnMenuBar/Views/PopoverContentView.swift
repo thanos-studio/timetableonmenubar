@@ -4,6 +4,7 @@ import Foundation
 struct PopoverContentView: View {
     @EnvironmentObject var timetableStore: TimetableStore
     @EnvironmentObject var settingsStore: SettingsStore
+    @Environment(\.openWindow) private var openWindow
 
     enum Tab { case today, weekly }
     @State private var selectedTab: Tab = .today
@@ -75,6 +76,11 @@ struct PopoverContentView: View {
             if showSettings {
                 SettingsView(showSettings: $showSettings)
                     .background(Color(nsColor: .windowBackgroundColor))
+            }
+        }
+        .task {
+            if !settingsStore.hasCompletedOnboarding {
+                openWindow(id: "onboarding")
             }
         }
     }

@@ -5,11 +5,26 @@ struct TodayView: View {
     @EnvironmentObject var timetableStore: TimetableStore
 
     var body: some View {
-        if timetableStore.todayTimetable.isEmpty {
+        if let errorMessage = timetableStore.errorMessage {
+            errorState(errorMessage)
+        } else if timetableStore.todayTimetable.isEmpty {
             emptyState
         } else {
             timetableList
         }
+    }
+
+    private func errorState(_ message: String) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: "wifi.slash")
+                .font(.system(size: 32))
+                .foregroundColor(.secondary)
+            Text(message)
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var emptyState: some View {

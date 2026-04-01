@@ -18,5 +18,12 @@ struct TimeTableOnMenuBarApp: App {
                 .environmentObject(timetableStore)
         }
         .menuBarExtraStyle(.window)
+
+        Window("설정", id: "onboarding") {
+            OnboardingContainerView()
+                .environmentObject(settingsStore)
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
     }
 }

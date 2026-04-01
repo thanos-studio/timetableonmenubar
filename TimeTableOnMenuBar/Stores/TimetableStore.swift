@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import AppKit
 
 class TimetableStore: ObservableObject {
     // MARK: - Published properties
@@ -11,6 +12,7 @@ class TimetableStore: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var periodSlots: [PeriodTimeSlot] = []
     @Published var lastRefreshDate: Date? = nil
+    @Published var errorMessage: String? = nil
 
     // MARK: - Private
     private let comciganService = ComciganService()
@@ -18,12 +20,15 @@ class TimetableStore: ObservableObject {
     private var timerTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private var activityToken: NSObjectProtocol?
+    private var wakeObserver: NSObjectProtocol?
+    private var lastKnownDay: Int
 
     private static let weekdayKeys = ["월", "화", "수", "목", "금"]
 
     // MARK: - Init
     init(settingsStore: SettingsStore) {
         self.settingsStore = settingsStore
+        self.lastKnownDay = Calendar.current.component(.day, from: Date())
 
         // Generate period slots for today
         periodSlots = PeriodCalculator.generateSlots(from: settingsStore.periodConfig, on: Date())
@@ -39,6 +44,23 @@ class TimetableStore: ObservableObject {
             options: [.userInitiated, .idleSystemSleepDisabled],
             reason: "Timetable countdown timer"
         )
+
+        // Wake from sleep handling
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.periodSlots = PeriodCalculator.generateSlots(
+                    from: self.settingsStore.periodConfig, on: Date()
+                )
+                self.lastKnownDay = Calendar.current.component(.day, from: Date())
+                self.updateMenuBarTitle()
+                await self.refreshTimetable()
+            }
+        }
 
         startTimerLoop()
         startRefreshLoop()
@@ -84,7 +106,16 @@ class TimetableStore: ObservableObject {
             return
         }
 
-        // Regenerate slots if date changed
+        // Midnight rollover: detect date change
+        let today = calendar.component(.day, from: now)
+        if today != lastKnownDay {
+            lastKnownDay = today
+            periodSlots = PeriodCalculator.generateSlots(from: settingsStore.periodConfig, on: now)
+            todayTimetable = extractTodayEntries(from: weeklyTimetable)
+            Task { await refreshTimetable() }
+        }
+
+        // Regenerate slots if date changed (belt-and-suspenders)
         let todayStart = calendar.startOfDay(for: now)
         if let firstSlot = periodSlots.first,
            calendar.startOfDay(for: firstSlot.startTime) != todayStart {
@@ -138,12 +169,36 @@ class TimetableStore: ObservableObject {
             applyTimetableData(results)
             settingsStore.saveCachedTimetable(results)
             lastRefreshDate = settingsStore.lastRefreshDate
+            errorMessage = nil
         } catch {
-            // Fall back to cached data
-            if let cached = settingsStore.cachedTimetable {
-                applyTimetableData(cached)
+            // Retry once after 5 seconds
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            do {
+                let results = try await comciganService.getTimetable(
+                    schoolCode: settingsStore.schoolCode,
+                    grade: settingsStore.grade,
+                    classNum: settingsStore.classNum
+                )
+                applyTimetableData(results)
+                settingsStore.saveCachedTimetable(results)
+                lastRefreshDate = settingsStore.lastRefreshDate
+                errorMessage = nil
+            } catch {
+                // Fall back to cache
+                if let cached = settingsStore.cachedTimetable {
+                    applyTimetableData(cached)
+                    errorMessage = nil
+                } else {
+                    errorMessage = "시간표를 불러올 수 없습니다"
+                }
             }
         }
+    }
+
+    // MARK: - Slot regeneration
+
+    func regenerateSlots() {
+        periodSlots = PeriodCalculator.generateSlots(from: settingsStore.periodConfig, on: Date())
     }
 
     // MARK: - Helpers
