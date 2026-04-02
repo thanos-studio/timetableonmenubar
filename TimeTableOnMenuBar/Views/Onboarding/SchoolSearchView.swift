@@ -102,6 +102,7 @@ struct SchoolSearchView: View {
                             selectedSchool = school
                             settingsStore.schoolCode = school.code
                             settingsStore.schoolName = school.name
+                            lookupNEISCodes(for: school.name)
                         }
                         .listRowBackground(
                             selectedSchool?.code == school.code
@@ -157,5 +158,19 @@ struct SchoolSearchView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+    }
+
+    private func lookupNEISCodes(for schoolName: String) {
+        Task {
+            do {
+                let results = try await NEISService().searchSchool(name: schoolName)
+                if let match = results.first(where: { $0.name == schoolName }) ?? results.first {
+                    settingsStore.neisOfficeCode = match.officeCode
+                    settingsStore.neisSchoolCode = match.schoolCode
+                }
+            } catch {
+                // NEIS lookup failure is non-blocking; meal feature just won't work
+            }
+        }
     }
 }

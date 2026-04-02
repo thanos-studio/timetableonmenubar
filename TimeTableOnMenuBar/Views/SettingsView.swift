@@ -232,7 +232,10 @@ struct SettingsView: View {
             totalPeriods: totalPeriods
         )
         settingsStore.savePeriodConfig()
-        Task { await timetableStore.refreshTimetable() }
+        Task {
+            await timetableStore.refreshTimetable()
+            await timetableStore.refreshMeals()
+        }
         showSettings = false
     }
 

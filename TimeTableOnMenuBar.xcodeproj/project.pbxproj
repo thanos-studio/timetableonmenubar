@@ -11,7 +11,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		20F917602F7CB32A000B89F9 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		20F917602F7CB32A000B89F9 /* Exceptions for "TimeTableOnMenuBar" folder in "TimeTableOnMenuBar" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -24,7 +24,7 @@
 		20F917512F7CB32A000B89F9 /* TimeTableOnMenuBar */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				20F917602F7CB32A000B89F9 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+				20F917602F7CB32A000B89F9 /* Exceptions for "TimeTableOnMenuBar" folder in "TimeTableOnMenuBar" target */,
 			);
 			path = TimeTableOnMenuBar;
 			sourceTree = "<group>";

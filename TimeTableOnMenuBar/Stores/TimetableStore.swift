@@ -13,9 +13,12 @@ class TimetableStore: ObservableObject {
     @Published var periodSlots: [PeriodTimeSlot] = []
     @Published var lastRefreshDate: Date? = nil
     @Published var errorMessage: String? = nil
+    @Published var todayMeals: [MealEntry] = []
+    @Published var weeklyMeals: [MealEntry] = []
 
     // MARK: - Private
     private let comciganService = ComciganService()
+    private let neisService = NEISService()
     private let settingsStore: SettingsStore
     private var timerTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
@@ -36,6 +39,12 @@ class TimetableStore: ObservableObject {
         // Load cached timetable if available
         if let cached = settingsStore.cachedTimetable {
             applyTimetableData(cached)
+        }
+        if let cachedMeals = settingsStore.cachedMeals {
+            todayMeals = cachedMeals
+        }
+        if let cachedWeekly = settingsStore.cachedWeeklyMeals {
+            weeklyMeals = cachedWeekly
         }
         lastRefreshDate = settingsStore.lastRefreshDate
 
@@ -64,6 +73,7 @@ class TimetableStore: ObservableObject {
 
         startTimerLoop()
         startRefreshLoop()
+        migrateNEISCodesIfNeeded()
     }
 
     nonisolated deinit {
@@ -85,9 +95,11 @@ class TimetableStore: ObservableObject {
     private func startRefreshLoop() {
         refreshTask = Task { [weak self] in
             await self?.refreshTimetable()
+            await self?.refreshMeals()
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 3_600_000_000_000)
                 await self?.refreshTimetable()
+                await self?.refreshMeals()
             }
         }
     }
@@ -219,5 +231,58 @@ class TimetableStore: ObservableObject {
         guard index >= 0, index < Self.weekdayKeys.count else { return [] }
         let key = Self.weekdayKeys[index]
         return timetable.days[key] ?? []
+    }
+
+    // MARK: - Meal Refresh
+
+    func refreshMeals() async {
+        guard settingsStore.hasNEISCodes else { return }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd"
+        let todayStr = formatter.string(from: Date())
+
+        do {
+            let meals = try await neisService.fetchMeals(
+                officeCode: settingsStore.neisOfficeCode,
+                schoolCode: settingsStore.neisSchoolCode,
+                date: todayStr
+            )
+            todayMeals = meals
+            settingsStore.saveCachedMeals(meals)
+
+            let weekly = try await neisService.fetchWeeklyMeals(
+                officeCode: settingsStore.neisOfficeCode,
+                schoolCode: settingsStore.neisSchoolCode,
+                baseDate: Date()
+            )
+            weeklyMeals = weekly
+            settingsStore.saveCachedWeeklyMeals(weekly)
+        } catch {
+            if let cached = settingsStore.cachedMeals {
+                todayMeals = cached
+            }
+            if let cached = settingsStore.cachedWeeklyMeals {
+                weeklyMeals = cached
+            }
+        }
+    }
+
+    private func migrateNEISCodesIfNeeded() {
+        guard !settingsStore.schoolName.isEmpty,
+              !settingsStore.hasNEISCodes else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let results = try await self.neisService.searchSchool(name: self.settingsStore.schoolName)
+                if let match = results.first(where: { $0.name == self.settingsStore.schoolName }) ?? results.first {
+                    await MainActor.run {
+                        self.settingsStore.neisOfficeCode = match.officeCode
+                        self.settingsStore.neisSchoolCode = match.schoolCode
+                    }
+                    await self.refreshMeals()
+                }
+            } catch { }
+        }
     }
 }

@@ -52,6 +52,7 @@ struct WeeklyView: View {
                         Divider()
                     }
                 }
+
             }
             .padding(.vertical, 4)
         }

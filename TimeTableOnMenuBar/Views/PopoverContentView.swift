@@ -66,6 +66,9 @@ struct PopoverContentView: View {
                 Tab("주간", systemImage: "calendar") {
                     WeeklyView()
                 }
+                Tab("급식", systemImage: "fork.knife") {
+                    MealView()
+                }
             }
         } else {
             TabView {
@@ -73,6 +76,8 @@ struct PopoverContentView: View {
                     .tabItem { Label("오늘", systemImage: "sun.max") }
                 WeeklyView()
                     .tabItem { Label("주간", systemImage: "calendar") }
+                MealView()
+                    .tabItem { Label("급식", systemImage: "fork.knife") }
             }
         }
     }
@@ -95,7 +100,10 @@ struct PopoverContentView: View {
                     }
                     Spacer()
                     Button {
-                        Task { await timetableStore.refreshTimetable() }
+                        Task {
+                            await timetableStore.refreshTimetable()
+                            await timetableStore.refreshMeals()
+                        }
                     } label: {
                         if timetableStore.isLoading {
                             ProgressView().controlSize(.small)
@@ -123,7 +131,10 @@ struct PopoverContentView: View {
                 }
                 Spacer()
                 Button {
-                    Task { await timetableStore.refreshTimetable() }
+                    Task {
+                        await timetableStore.refreshTimetable()
+                        await timetableStore.refreshMeals()
+                    }
                 } label: {
                     if timetableStore.isLoading {
                         ProgressView().controlSize(.small)
